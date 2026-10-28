@@ -3,6 +3,7 @@ package store
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -101,6 +102,69 @@ func ValidateStockInput(in StockInput) []FieldError {
 	}
 	if utf8.RuneCountInString(in.Note) > maxNote {
 		errs = addErr(errs, "note", "note must be at most 500 characters")
+	}
+	return errs
+}
+
+// maxCustomer bounds the customer name, in characters.
+const maxCustomer = 200
+
+// CatalogEntry is the price and status of a product referenced by an order.
+type CatalogEntry struct {
+	Price    int64
+	IsActive bool
+}
+
+// ValidateOrder checks a whole order request against the catalog of the
+// products it references and reports every failure: customer 1..200 chars,
+// at least one item, known active non-duplicate SKUs, qty 1..1,000,000 and a
+// total that fits the INTEGER total column.
+func ValidateOrder(in OrderInput, catalog map[string]CatalogEntry) []FieldError {
+	var errs []FieldError
+	customer := strings.TrimSpace(in.Customer)
+	switch {
+	case customer == "":
+		errs = addErr(errs, "customer", "customer is required")
+	case utf8.RuneCountInString(customer) > maxCustomer:
+		errs = addErr(errs, "customer", "customer must be at most 200 characters")
+	}
+	if len(in.Items) == 0 {
+		return addErr(errs, "items", "items must contain at least one item")
+	}
+
+	seen := make(map[string]bool, len(in.Items))
+	var total int64
+	over := false
+	for i, it := range in.Items {
+		skuField := fmt.Sprintf("items[%d].sku", i)
+		sku := strings.TrimSpace(it.SKU)
+		qty, qmsg := parseQty(it.Qty)
+		if qmsg != "" {
+			errs = addErr(errs, fmt.Sprintf("items[%d].qty", i), qmsg)
+		}
+		entry, known := catalog[sku]
+		switch {
+		case sku == "":
+			errs = addErr(errs, skuField, "sku is required")
+			continue
+		case seen[sku]:
+			errs = addErr(errs, skuField, fmt.Sprintf("duplicate sku %q", sku))
+			continue
+		case !known:
+			errs = addErr(errs, skuField, fmt.Sprintf("unknown sku %q", sku))
+		case !entry.IsActive:
+			errs = addErr(errs, skuField, fmt.Sprintf("product %q is inactive", sku))
+		}
+		seen[sku] = true
+		// Each term is at most 2^31 * 10^6, so stopping once over the limit
+		// keeps the int64 sum from overflowing.
+		if known && qmsg == "" && !over {
+			total += entry.Price * qty
+			over = total > maxInt32
+		}
+	}
+	if over {
+		errs = addErr(errs, "items", "order total exceeds 2147483647")
 	}
 	return errs
 }
