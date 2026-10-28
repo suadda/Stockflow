@@ -1,0 +1,21 @@
+# StockFlow local environment.
+# `docker compose up -d` starts Postgres; SQL files in backend/migrations run
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: stockflow
+      POSTGRES_USER: stockflow
+      POSTGRES_PASSWORD: stockflow # local dev only
+    ports:
+      - "5432:5432" # host:container
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stockflow -d stockflow"]
+      interval: 2s
+      retries: 15
+
+volumes:
+  pgdata:
