@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 
 export type Route = { name: 'products' } | { name: 'orderNew' } | { name: 'order'; id: number }
 
-/** Maps a location hash to a route; anything unknown shows products. */
 export function parseRoute(hash: string): Route {
   const path = hash.replace(/^#/, '')
   if (path === '/orders/new') return { name: 'orderNew' }

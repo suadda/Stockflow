@@ -38,7 +38,7 @@ export default function OrderDetailPage({ id }: { id: number }) {
     } catch (err) {
       const e = toApiError(err)
       setBanner({ kind: 'error', text: e.message })
-      if (e.code === 'ALREADY_CANCELLED') setRetry((r) => r + 1) // show the current state
+      if (e.code === 'ALREADY_CANCELLED') setRetry((r) => r + 1)
     } finally {
       setCancelling(false)
     }

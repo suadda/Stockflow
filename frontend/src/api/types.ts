@@ -1,5 +1,3 @@
-// Shared API types. They mirror the Go JSON exactly: snake_case fields,
-// integer IDR amounts, ISO 8601 UTC timestamps.
 
 export interface Product {
   id: number

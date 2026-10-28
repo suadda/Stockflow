@@ -1,11 +1,8 @@
-// Pure client-side validation, mirroring the API rules. The server stays the
-// authority; these only prevent obviously bad submits.
 import type { FieldErrorDetail, OrderInput } from '../api/types'
 
 export const MAX_QTY = 1_000_000
 export const MAX_PRICE = 2_147_483_647
 
-/** null when raw is a whole number 1..1,000,000 (digits only, no spaces). */
 export function validateQty(raw: string): string | null {
   if (!/^\d+$/.test(raw)) return 'Enter a whole number from 1 to 1,000,000'
   const n = Number(raw)
@@ -46,7 +43,6 @@ export interface OrderDraftErrors {
   form?: string
 }
 
-/** SKU comparison key: trimmed, case-insensitive. */
 export function skuKey(sku: string): string {
   return sku.trim().toUpperCase()
 }
@@ -76,8 +72,6 @@ export function hasDraftErrors(e: OrderDraftErrors): boolean {
 
 const KNOWN_FIELD = /^(customer|items|items\[\d+\]\.(sku|qty))$/
 
-/** Splits API validation details into field-addressable messages and the
- * rest. Every message ends up in exactly one place. */
 export function mapValidationDetails(details: FieldErrorDetail[]): {
   fields: Record<string, string[]>
   unmatched: string[]
@@ -91,7 +85,6 @@ export function mapValidationDetails(details: FieldErrorDetail[]): {
   return { fields, unmatched }
 }
 
-/** Builds the API request: only customer and items[{sku, qty}], trimmed. */
 export function toOrderRequest(d: OrderDraft): OrderInput {
   return {
     customer: d.customer.trim(),

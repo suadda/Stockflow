@@ -5,7 +5,6 @@ import { formatRupiah } from '../lib/format'
 import { useRefresh } from '../lib/refresh'
 import { ErrorState } from './ErrorState'
 
-/** Headline figures from GET /api/summary; re-fetched after every mutation. */
 export function SummaryCards() {
   const { version } = useRefresh()
   const [summary, setSummary] = useState<Summary | null>(null)

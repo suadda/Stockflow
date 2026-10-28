@@ -29,8 +29,6 @@ export default function ProductsPage() {
   const debouncedSearch = useDebounce(search.trim(), 300)
   const [status, setStatus] = useState<ProductStatusFilter>('')
 
-  // The page resets to 1 whenever the search or filter changes: a page
-  // number only counts for the filter it was chosen under.
   const filterKey = `${debouncedSearch}\u0000${status}`
   const [paging, setPaging] = useState({ key: filterKey, page: 1 })
   const page = paging.key === filterKey ? paging.page : 1
@@ -61,12 +59,11 @@ export default function ProductsPage() {
       .finally(() => {
         if (!ctrl.signal.aborted) setLoading(false)
       })
-    return () => ctrl.abort() // drops stale responses when inputs change
+    return () => ctrl.abort()
   }, [debouncedSearch, status, page, version, retry])
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1
 
-  // Deleting the last row of the last page leaves us past the end.
   useEffect(() => {
     if (data && data.data.length === 0 && data.total > 0 && page > totalPages) {
       setPaging({ key: filterKey, page: totalPages })

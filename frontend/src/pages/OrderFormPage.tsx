@@ -41,15 +41,13 @@ export default function OrderFormPage() {
   const [server, setServer] = useState<ServerState>(NO_SERVER)
   const [catalog, setCatalog] = useState<Map<string, Product>>(new Map())
 
-  // SKU suggestions and live price hints. ponytail: first 100 active products
-  // only; a typeahead against ?search= is the upgrade if the catalog grows.
   useEffect(() => {
     const ctrl = new AbortController()
     api
       .listProducts({ status: 'active', limit: 100 }, ctrl.signal)
       .then((res) => setCatalog(new Map(res.data.map((p) => [p.sku, p]))))
       .catch((err: unknown) => {
-        if (!isAbort(err)) setCatalog(new Map()) // hints are optional
+        if (!isAbort(err)) setCatalog(new Map())
       })
     return () => ctrl.abort()
   }, [])
@@ -61,7 +59,6 @@ export default function OrderFormPage() {
   const touch = (k: string) => setTouched((prev) => new Set(prev).add(k))
   const shown = (k: string, msg: string | undefined) => (touched.has(k) ? msg : undefined)
 
-  // Any edit makes earlier server feedback stale.
   const edit = (fn: () => void) => {
     fn()
     setServer(NO_SERVER)
@@ -92,7 +89,6 @@ export default function OrderFormPage() {
     }
   }
 
-  // Client-side estimate only; the server computes the real total.
   let estimate: number | null = 0
   for (const r of rows) {
     const p = catalog.get(r.sku.trim())

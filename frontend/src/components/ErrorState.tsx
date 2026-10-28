@@ -6,7 +6,6 @@ interface Props {
   onRetry: () => void
 }
 
-/** Failed-load state: the API's message in an alert region plus Retry. */
 export function ErrorState({ title, error, onRetry }: Props) {
   const unreachable = error.code === 'NETWORK_ERROR' || (error.code === 'UNKNOWN' && error.status >= 500)
   return (

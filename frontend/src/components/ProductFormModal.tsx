@@ -5,7 +5,6 @@ import { validateProductForm, type ProductFormValues } from '../lib/validate'
 import { Modal } from './Modal'
 
 interface Props {
-  /** Absent for create, present for edit. */
   product?: Product
   onClose: () => void
   onSaved: (p: Product) => void

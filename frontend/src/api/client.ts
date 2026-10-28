@@ -1,5 +1,3 @@
-// The only module that calls fetch or builds API URLs. Every non-2xx
-// response becomes a typed ApiError, so screens never parse raw bodies.
 import type {
   FieldErrorDetail,
   Movement,
@@ -21,9 +19,7 @@ export interface ApiErrorExtras {
 }
 
 export class ApiError extends Error {
-  /** HTTP status; 0 when no response arrived. */
   readonly status: number
-  /** Envelope code, or 'UNKNOWN' / 'NETWORK_ERROR'. */
   readonly code: string
   readonly details?: FieldErrorDetail[]
   readonly sku?: string
@@ -48,10 +44,6 @@ function isDetail(v: unknown): v is FieldErrorDetail {
   return isRecord(v) && typeof v.field === 'string' && typeof v.message === 'string'
 }
 
-/**
- * Turns a non-2xx response body into an ApiError. Pure and total: it never
- * throws. Bodies that are not an error envelope become code UNKNOWN.
- */
 export function parseApiError(status: number, bodyText: string): ApiError {
   let parsed: unknown
   try {
@@ -71,13 +63,11 @@ export function parseApiError(status: number, bodyText: string): ApiError {
   return new ApiError(status, e.code, message, extras)
 }
 
-/** Normalises anything thrown by an api call into an ApiError. */
 export function toApiError(err: unknown): ApiError {
   if (err instanceof ApiError) return err
   return new ApiError(0, 'UNKNOWN', err instanceof Error ? err.message : String(err))
 }
 
-/** True for the error fetch throws when a request is aborted. */
 export function isAbort(err: unknown): boolean {
   return err instanceof DOMException && err.name === 'AbortError'
 }

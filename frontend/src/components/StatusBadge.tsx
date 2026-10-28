@@ -1,9 +1,7 @@
 import type { Product } from '../api/types'
 
-/** Matches the API's low-stock rule (stock <= 10). */
 export const LOW_STOCK_THRESHOLD = 10
 
-/** Text badges, so status never relies on colour alone. */
 export function StatusBadge({ product }: { product: Pick<Product, 'is_active' | 'stock'> }) {
   return (
     <span className="badges">

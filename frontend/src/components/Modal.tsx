@@ -6,11 +6,6 @@ interface Props {
   children: ReactNode
 }
 
-/**
- * Modal built on the native <dialog>: showModal() traps focus and makes the
- * page inert; Escape fires `cancel`, which we route to onClose. Mount it only
- * while open. On unmount, focus goes back to the element that opened it.
- */
 export function Modal({ title, onClose, children }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()

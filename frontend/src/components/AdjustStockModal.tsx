@@ -25,8 +25,6 @@ export function AdjustStockModal({ product, onClose, onDone }: Props) {
   const noteError = Array.from(note).length > MAX_NOTE ? `Note must be at most ${MAX_NOTE} characters` : null
   const showQtyError = qtyError !== null && (qtyTouched || qty !== '')
 
-  // An out larger than stock is deliberately NOT blocked here: the server's
-  // guarded update is the authority, and its 409 is shown below.
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (qtyError || noteError || saving) return

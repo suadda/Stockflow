@@ -28,7 +28,7 @@ describe('formatRelative', () => {
     [ago(2 * 60 * MIN), '2h ago'],
     [ago(24 * 60 * MIN - 1), '23h ago'],
     [ago(3 * 24 * 60 * MIN), '3d ago'],
-    [ago(-10 * MIN), 'just now'], // future (clock skew)
+    [ago(-10 * MIN), 'just now'],
   ])('%s -> %s', (iso, want) => {
     expect(formatRelative(iso, now)).toBe(want)
   })
