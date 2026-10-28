@@ -15,14 +15,10 @@ import (
 	"stockflow/internal/store"
 )
 
-// maxBodyBytes caps request bodies at 1 MiB.
 const maxBodyBytes = 1 << 20
 
-// errInvalidJSON marks a request body that could not be decoded. decodeJSON
-// wraps it with a human-readable reason; writeStoreError maps it to 400.
 var errInvalidJSON = errors.New("invalid JSON body")
 
-// writeJSON writes v as JSON with the given status.
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
@@ -31,8 +27,6 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	}
 }
 
-// writeError writes {"error":{"code":..,"message":..,...extra}}. Extras never
-// overwrite code or message.
 func writeError(w http.ResponseWriter, status int, code, message string, extra map[string]any) {
 	body := make(map[string]any, len(extra)+2)
 	for k, v := range extra {
@@ -43,9 +37,6 @@ func writeError(w http.ResponseWriter, status int, code, message string, extra m
 	writeJSON(w, status, map[string]any{"error": body})
 }
 
-// decodeJSON decodes exactly one JSON value from the body into dst, rejecting
-// unknown fields, trailing data and bodies over 1 MiB. Failures wrap
-// errInvalidJSON.
 func decodeJSON(r *http.Request, dst any) error {
 	dec := json.NewDecoder(http.MaxBytesReader(nil, r.Body, maxBodyBytes))
 	dec.DisallowUnknownFields()
@@ -64,7 +55,6 @@ func decodeJSON(r *http.Request, dst any) error {
 	return nil
 }
 
-// decodeReason turns a json/io error into a short client-facing reason.
 func decodeReason(err error) string {
 	var tooBig *http.MaxBytesError
 	switch {
@@ -78,8 +68,6 @@ func decodeReason(err error) string {
 	return strings.TrimPrefix(err.Error(), "json: ")
 }
 
-// writeStoreError maps store, decode and database errors to the error envelope.
-// Unknown errors are logged and reported as a generic 500.
 func writeStoreError(w http.ResponseWriter, err error) {
 	var verr *store.ValidationError
 	var serr *store.InsufficientStockError
@@ -128,8 +116,6 @@ func writeHasHistory(w http.ResponseWriter) {
 		"product has stock movements or order items and cannot be deleted", nil)
 }
 
-// parseID returns the {id} path value when it is a positive int32 written as
-// plain digits.
 func parseID(r *http.Request) (int64, bool) {
 	s := r.PathValue("id")
 	if s == "" {
@@ -140,7 +126,7 @@ func parseID(r *http.Request) (int64, bool) {
 			return 0, false
 		}
 	}
-	// ids are SERIAL (int4); anything larger cannot exist.
+
 	id, err := strconv.ParseInt(s, 10, 32)
 	if err != nil || id <= 0 {
 		return 0, false

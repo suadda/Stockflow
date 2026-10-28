@@ -1,7 +1,5 @@
 package store
 
-// Required tests (d). Run with: go test -race ./...
-
 import (
 	"context"
 	"errors"
@@ -9,7 +7,6 @@ import (
 	"testing"
 )
 
-// run executes fn concurrently n times, released together, and returns the errors.
 func run(n int, fn func(i int) error) []error {
 	errs := make([]error, n)
 	start := make(chan struct{})
@@ -73,8 +70,6 @@ func TestConcurrentReversedOrdersDoNotDeadlock(t *testing.T) {
 	a := stocked(t, s, pfx+"A", 1000, 100)
 	b := stocked(t, s, pfx+"B", 2000, 100)
 
-	// Half the orders list A then B, half B then A. Without sorted locking
-	// this pattern deadlocks (pg 40P01) and some orders would fail.
 	errs := run(40, func(i int) error {
 		in := order("Racer", item(a.SKU, 1), item(b.SKU, 1))
 		if i%2 == 1 {

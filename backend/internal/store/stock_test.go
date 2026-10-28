@@ -6,7 +6,6 @@ import (
 	"testing"
 )
 
-// Required test (a): an out larger than stock is rejected and writes NOTHING.
 func TestAdjustStockInsufficientWritesNothing(t *testing.T) {
 	s, pfx := testStore(t)
 	ctx := context.Background()
@@ -33,7 +32,6 @@ func TestAdjustStockInsufficientWritesNothing(t *testing.T) {
 	}
 }
 
-// Required test (b): a valid adjustment updates stock and writes exactly one movement.
 func TestAdjustStockHappyPath(t *testing.T) {
 	s, pfx := testStore(t)
 	ctx := context.Background()
@@ -58,7 +56,7 @@ func TestAdjustStockHappyPath(t *testing.T) {
 	if len(ms) != 2 {
 		t.Fatalf("movements = %d, want 2", len(ms))
 	}
-	// Newest first.
+
 	if ms[0].Type != MovementOut || ms[0].Qty != 2 || ms[1].Type != MovementIn || ms[1].Qty != 5 {
 		t.Fatalf("movements order/content: %+v", ms)
 	}
@@ -66,7 +64,6 @@ func TestAdjustStockHappyPath(t *testing.T) {
 		t.Fatalf("movement fields: %+v", ms[0])
 	}
 
-	// Exact drain to zero is allowed.
 	if after, err = s.AdjustStock(ctx, p.ID, stockOut(3)); err != nil || after.Stock != 0 {
 		t.Fatalf("drain: %+v, %v", after, err)
 	}

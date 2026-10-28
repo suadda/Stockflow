@@ -13,7 +13,6 @@ func TestCreateOrderHappyPath(t *testing.T) {
 	a := stocked(t, s, pfx+"A", 45000, 10)
 	b := stocked(t, s, pfx+"B", 1250000, 3)
 
-	// Request order B, A; stock is taken in sorted order but the result is the same.
 	o, err := s.CreateOrder(ctx, order(" Toko Maju ", item(b.SKU, 2), item(a.SKU, 4)))
 	if err != nil {
 		t.Fatalf("create: %v", err)
@@ -49,12 +48,11 @@ func TestCreateOrderHappyPath(t *testing.T) {
 	}
 }
 
-// Required test (c): one insufficient item rolls back the whole order.
 func TestCreateOrderInsufficientRollsBack(t *testing.T) {
 	s, pfx := testStore(t)
 	ctx := context.Background()
 	a := stocked(t, s, pfx+"A", 1000, 5)
-	b := stocked(t, s, pfx+"B", 2000, 1) // second in sorted order, so A was already decremented
+	b := stocked(t, s, pfx+"B", 2000, 1)
 
 	_, err := s.CreateOrder(ctx, order("Toko Maju", item(a.SKU, 2), item(b.SKU, 3)))
 	var ie *InsufficientStockError
@@ -151,7 +149,6 @@ func TestCancelOrder(t *testing.T) {
 		t.Fatal("second cancel changed stock")
 	}
 
-	// A cancelled order still blocks deleting its products: history is kept.
 	if err := s.DeleteProduct(ctx, a.ID); !errors.Is(err, ErrHasHistory) {
 		t.Fatalf("delete: %v", err)
 	}

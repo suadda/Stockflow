@@ -37,8 +37,6 @@ func mustCreate(t *testing.T, h http.Handler, body string) productJSON {
 	return decodeAs[productJSON](t, rec)
 }
 
-// addIn records an 'in' movement and the matching stock increase, keeping
-// the ledger consistent for other tests sharing the database.
 func addIn(t *testing.T, pool *pgxpool.Pool, id int64, qty int) {
 	t.Helper()
 	_, err := pool.Exec(context.Background(), `
@@ -113,7 +111,6 @@ func TestProductsUpdate(t *testing.T) {
 		t.Fatalf("updated %+v", u)
 	}
 
-	// Sending the unchanged SKU is fine; changing it is not.
 	expect(t, call(h, http.MethodPut, path,
 		fmt.Sprintf(`{"sku":"%sA","name":"Cable","price":1,"is_active":true}`, pfx)), http.StatusOK)
 	e := expectError(t, call(h, http.MethodPut, path,
@@ -160,7 +157,7 @@ func TestProductsList(t *testing.T) {
 	b := mustCreate(t, h, fmt.Sprintf(`{"sku":"%sB","name":"Kabel Biru","price":200}`, pfx))
 	c := mustCreate(t, h, fmt.Sprintf(`{"sku":"%sC","name":"Lama","price":300,"is_active":false}`, pfx))
 
-	q := "search=" + url.QueryEscape(strings.ToLower(pfx)) // case-insensitive
+	q := "search=" + url.QueryEscape(strings.ToLower(pfx))
 	all := list(t, h, q)
 	if all.Total != 3 || len(all.Data) != 3 || all.Page != 1 || all.Limit != 20 {
 		t.Fatalf("all: %+v", all)
@@ -190,7 +187,6 @@ func TestProductsList(t *testing.T) {
 		t.Fatalf("last_movement_at not set: %+v", got)
 	}
 
-	// Name search, paging, clamping.
 	if got := list(t, h, q+"&search=biru"); got.Total < 1 {
 		t.Fatalf("name search: %+v", got)
 	}
@@ -201,7 +197,6 @@ func TestProductsList(t *testing.T) {
 		t.Fatalf("clamp: %+v", got)
 	}
 
-	// Wildcards match literally; empty results are [] not null.
 	rec := call(h, http.MethodGet, "/api/products?search="+url.QueryEscape(pfx+"%"), "")
 	expect(t, rec, http.StatusOK)
 	if !strings.Contains(rec.Body.String(), `"data":[]`) {

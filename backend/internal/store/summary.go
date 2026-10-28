@@ -2,7 +2,6 @@ package store
 
 import "context"
 
-// Summary holds the headline inventory figures for the summary cards.
 type Summary struct {
 	TotalProducts   int64 `json:"total_products"`
 	ActiveProducts  int64 `json:"active_products"`
@@ -10,9 +9,6 @@ type Summary struct {
 	LowStockCount   int64 `json:"low_stock_count"`
 }
 
-// Summary computes the figures in one aggregate query. The stock value is
-// summed as bigint: price and stock are INTEGER, and their product can
-// exceed int32.
 func (s *Store) Summary(ctx context.Context) (Summary, error) {
 	return summarize(ctx, s.pool)
 }

@@ -18,9 +18,6 @@ import (
 	"stockflow/internal/store"
 )
 
-// testAPI returns a router on the real database from DATABASE_URL, a pool for
-// direct SQL, and a unique SKU prefix. Rows using the prefix are removed on
-// cleanup. Without DATABASE_URL the test is skipped.
 func testAPI(t *testing.T) (http.Handler, *pgxpool.Pool, string) {
 	t.Helper()
 	dsn := os.Getenv("DATABASE_URL")
@@ -45,7 +42,6 @@ func testAPI(t *testing.T) (http.Handler, *pgxpool.Pool, string) {
 	return NewRouter(store.New(pool)), pool, prefix
 }
 
-// call sends one JSON request through the handler.
 func call(h http.Handler, method, path, body string) *httptest.ResponseRecorder {
 	var rd io.Reader
 	if body != "" {
@@ -58,7 +54,6 @@ func call(h http.Handler, method, path, body string) *httptest.ResponseRecorder 
 	return rec
 }
 
-// decodeAs unmarshals the response body into T.
 func decodeAs[T any](t *testing.T, rec *httptest.ResponseRecorder) T {
 	t.Helper()
 	var v T
@@ -68,7 +63,6 @@ func decodeAs[T any](t *testing.T, rec *httptest.ResponseRecorder) T {
 	return v
 }
 
-// expect fails the test unless the response has the given status.
 func expect(t *testing.T, rec *httptest.ResponseRecorder, status int) {
 	t.Helper()
 	if rec.Code != status {
@@ -76,7 +70,6 @@ func expect(t *testing.T, rec *httptest.ResponseRecorder, status int) {
 	}
 }
 
-// expectError checks status and envelope code, returning the error object.
 func expectError(t *testing.T, rec *httptest.ResponseRecorder, status int, code string) map[string]any {
 	t.Helper()
 	expect(t, rec, status)
@@ -87,7 +80,6 @@ func expectError(t *testing.T, rec *httptest.ResponseRecorder, status int, code 
 	return e
 }
 
-// detailFields returns the set of `field` values in a VALIDATION_ERROR.
 func detailFields(e map[string]any) map[string]bool {
 	out := map[string]bool{}
 	d, _ := e["details"].([]any)
@@ -99,8 +91,6 @@ func detailFields(e map[string]any) map[string]bool {
 	return out
 }
 
-// cleanupPrefix deletes orders touching prefixed SKUs, then their products'
-// movements, then the products.
 func cleanupPrefix(t *testing.T, pool *pgxpool.Pool, prefix string) {
 	ctx := context.Background()
 	like := prefix + "%"

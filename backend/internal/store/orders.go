@@ -12,26 +12,21 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// Order statuses.
 const (
 	StatusCreated   = "CREATED"
 	StatusCancelled = "CANCELLED"
 )
 
-// OrderItemInput is one requested line. There is deliberately no price
-// field: prices always come from the products table.
 type OrderItemInput struct {
 	SKU string      `json:"sku"`
 	Qty json.Number `json:"qty"`
 }
 
-// OrderInput is the create-order request.
 type OrderInput struct {
 	Customer string           `json:"customer"`
 	Items    []OrderItemInput `json:"items"`
 }
 
-// OrderItem is one stored order line.
 type OrderItem struct {
 	SKU       string `json:"sku"`
 	Qty       int64  `json:"qty"`
@@ -39,7 +34,6 @@ type OrderItem struct {
 	Subtotal  int64  `json:"subtotal"`
 }
 
-// Order is a sales order with its items.
 type Order struct {
 	ID          int64       `json:"id"`
 	Customer    string      `json:"customer"`
@@ -50,32 +44,21 @@ type Order struct {
 	Items       []OrderItem `json:"items"`
 }
 
-// querier is satisfied by both *pgxpool.Pool and pgx.Tx.
 type querier interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 }
 
-// line is a validated order line plus its index in the request.
 type line struct {
 	idx int
 	sku string
 	qty int64
 }
 
-// sortLines orders lines by SKU so every transaction takes product row locks
-// in the same order, which rules out deadlocks between concurrent orders.
-// Go byte order is used (not the DB collation) so create and cancel agree.
 func sortLines(ls []line) {
 	sort.Slice(ls, func(a, b int) bool { return ls[a].sku < ls[b].sku })
 }
 
-// CreateOrder validates the whole request, then in ONE transaction takes
-// stock for every line with a guarded UPDATE (in ascending SKU order),
-// inserts the order, its items and one 'out' movement per item. Unit prices
-// come from the locked product rows; the total is computed here. If any line
-// is short the transaction rolls back and *InsufficientStockError names the
-// first short SKU: either the whole order exists or nothing changed.
 func (s *Store) CreateOrder(ctx context.Context, in OrderInput) (Order, error) {
 	skus := make([]string, len(in.Items))
 	for i, it := range in.Items {
@@ -114,7 +97,7 @@ func (s *Store) CreateOrder(ctx context.Context, in OrderInput) (Order, error) {
 			}
 			total += prices[k] * l.qty
 		}
-		if total > maxInt32 { // a price changed since validation
+		if total > maxInt32 {
 			return &ValidationError{Details: []FieldError{{Field: "items", Message: "order total exceeds 2147483647"}}}
 		}
 
@@ -143,12 +126,10 @@ func (s *Store) CreateOrder(ctx context.Context, in OrderInput) (Order, error) {
 	return out, err
 }
 
-// shortLine explains why a guarded decrement matched no row. The read only
-// reports the reason; the guarded UPDATE already made the decision.
 func shortLine(ctx context.Context, tx pgx.Tx, l line) error {
 	var available int64
 	err := tx.QueryRow(ctx, `SELECT stock FROM products WHERE sku = $1`, l.sku).Scan(&available)
-	if errors.Is(err, pgx.ErrNoRows) { // deleted since validation
+	if errors.Is(err, pgx.ErrNoRows) {
 		return &ValidationError{Details: []FieldError{{
 			Field: fmt.Sprintf("items[%d].sku", l.idx), Message: fmt.Sprintf("unknown sku %q", l.sku),
 		}}}
@@ -180,15 +161,10 @@ func loadCatalog(ctx context.Context, q querier, skus []string) (map[string]Cata
 	return catalog, rows.Err()
 }
 
-// GetOrder returns an order with its items, or ErrNotFound.
 func (s *Store) GetOrder(ctx context.Context, id int64) (Order, error) {
 	return loadOrder(ctx, s.pool, id)
 }
 
-// CancelOrder cancels a CREATED order in one transaction: it locks the order
-// row (SELECT ... FOR UPDATE, so concurrent cancels serialize and stock is
-// restored exactly once), puts every item's stock back with an 'in' movement
-// and sets status and cancelled_at.
 func (s *Store) CancelOrder(ctx context.Context, id int64) (Order, error) {
 	var out Order
 	err := s.withTx(ctx, func(tx pgx.Tx) error {

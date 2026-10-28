@@ -34,7 +34,6 @@ func TestStockHTTP(t *testing.T) {
 		t.Fatalf("fresh product has movements: %+v", ms)
 	}
 
-	// (b) happy path: in 5 then out 2.
 	rec := call(h, http.MethodPost, stock, `{"type":"in","qty":5,"note":"receipt"}`)
 	expect(t, rec, http.StatusOK)
 	if got := decodeAs[productJSON](t, rec); got.Stock != 5 || got.LastMovementAt == nil {
@@ -51,7 +50,6 @@ func TestStockHTTP(t *testing.T) {
 		t.Fatalf("movements: %+v", ms)
 	}
 
-	// (a) overdraw: 409 with available, nothing written.
 	e := expectError(t, call(h, http.MethodPost, stock, `{"type":"out","qty":8,"note":"too many"}`),
 		http.StatusConflict, "INSUFFICIENT_STOCK")
 	if e["available"] != float64(3) {
@@ -67,7 +65,6 @@ func TestStockHTTP(t *testing.T) {
 		t.Fatalf("movement written for rejected out: %+v", ms)
 	}
 
-	// Validation.
 	cases := map[string]string{
 		`{"type":"sideways","qty":1}`: "type",
 		`{"type":"in","qty":0}`:       "qty",
@@ -85,7 +82,6 @@ func TestStockHTTP(t *testing.T) {
 	expect(t, call(h, http.MethodPost, stock,
 		`{"type":"in","qty":1,"note":"`+strings.Repeat("é", 500)+`"}`), http.StatusOK)
 
-	// Missing product.
 	expectError(t, call(h, http.MethodPost, "/api/products/2147483000/stock", `{"type":"in","qty":1}`),
 		http.StatusNotFound, "NOT_FOUND")
 	expectError(t, call(h, http.MethodGet, "/api/products/2147483000/movements", ""),

@@ -11,9 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// testStore returns a Store on the real database from DATABASE_URL and a
-// unique SKU prefix whose rows are removed on cleanup. Without DATABASE_URL
-// the test is skipped.
 func testStore(t *testing.T) (*Store, string) {
 	t.Helper()
 	dsn := os.Getenv("DATABASE_URL")
@@ -49,7 +46,6 @@ func testStore(t *testing.T) (*Store, string) {
 	return New(pool), prefix
 }
 
-// newProduct creates an active product with stock 0.
 func newProduct(t *testing.T, s *Store, sku string, price int64) Product {
 	t.Helper()
 	p, err := s.CreateProduct(context.Background(), ProductInput{
@@ -61,7 +57,6 @@ func newProduct(t *testing.T, s *Store, sku string, price int64) Product {
 	return p
 }
 
-// movementCount returns how many movements a product has.
 func movementCount(t *testing.T, s *Store, id int64) int {
 	t.Helper()
 	ms, err := s.ListMovements(context.Background(), id)
@@ -79,7 +74,6 @@ func stockOut(qty int) StockInput {
 	return StockInput{Type: MovementOut, Qty: json.Number(strconv.Itoa(qty)), Note: "test out"}
 }
 
-// stocked creates a product and receives qty units into it.
 func stocked(t *testing.T, s *Store, sku string, price int64, qty int) Product {
 	t.Helper()
 	p := newProduct(t, s, sku, price)
@@ -109,7 +103,6 @@ func stockOf(t *testing.T, s *Store, id int64) int64 {
 	return p.Stock
 }
 
-// countWhere runs a count(*) query with the given args.
 func countWhere(t *testing.T, s *Store, sql string, args ...any) int {
 	t.Helper()
 	var n int
@@ -119,12 +112,10 @@ func countWhere(t *testing.T, s *Store, sql string, args ...any) int {
 	return n
 }
 
-// movementsOf counts a product's movements of one type.
 func movementsOf(t *testing.T, s *Store, id int64, typ string) int {
 	return countWhere(t, s, `SELECT count(*) FROM stock_movements WHERE product_id = $1 AND type = $2`, id, typ)
 }
 
-// ordersFor counts orders that include any SKU with the prefix.
 func ordersFor(t *testing.T, s *Store, prefix string) int {
 	return countWhere(t, s,
 		`SELECT count(DISTINCT order_id) FROM sales_order_items WHERE sku LIKE $1`, prefix+"%")

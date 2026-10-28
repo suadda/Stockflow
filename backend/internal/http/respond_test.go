@@ -22,7 +22,6 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// envelope decodes {"error":{...}} into a generic map.
 func envelope(t *testing.T, rec *httptest.ResponseRecorder) map[string]any {
 	t.Helper()
 	var body struct {

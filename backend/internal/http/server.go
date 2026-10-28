@@ -1,4 +1,3 @@
-// Package httpapi exposes the StockFlow REST API over net/http.
 package httpapi
 
 import (
@@ -9,8 +8,6 @@ import (
 	"stockflow/internal/store"
 )
 
-// NewRouter builds the API handler: routes on a Go 1.22 method-pattern
-// ServeMux, wrapped as logger(recoverer(mux)).
 func NewRouter(s *store.Store) http.Handler {
 	mux := http.NewServeMux()
 
@@ -23,7 +20,6 @@ func NewRouter(s *store.Store) http.Handler {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 
-	// --- /api routes ---
 	mux.HandleFunc("GET /api/products", listProducts(s))
 	mux.HandleFunc("POST /api/products", createProduct(s))
 	mux.HandleFunc("PUT /api/products/{id}", updateProduct(s))
@@ -40,22 +36,15 @@ func NewRouter(s *store.Store) http.Handler {
 	return logger(recoverer(mux))
 }
 
-// probeMethods are the methods checked when deciding between 404 and 405.
-// ponytail: fixed list; add a method here if a route ever uses another one.
 var probeMethods = []string{
 	http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete,
 }
 
-// fallback handles every request no other pattern matched. Because "/"
-// matches all methods, the mux never emits its own plain-text 405, so this
-// handler re-checks the path under other methods: if any matches a real
-// route it answers 405 METHOD_NOT_ALLOWED with an Allow header, otherwise
-// 404 NOT_FOUND. Both use the error envelope.
 func fallback(mux *http.ServeMux) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var allow []string
 		for _, m := range probeMethods {
-			probe := r.WithContext(r.Context()) // shallow copy
+			probe := r.WithContext(r.Context())
 			probe.Method = m
 			if _, pattern := mux.Handler(probe); pattern != "/" {
 				allow = append(allow, m)

@@ -31,7 +31,6 @@ func TestOrdersHTTP(t *testing.T) {
 		return list(t, h, "search="+sku).Data[0].Stock
 	}
 
-	// Happy path: server prices and total.
 	rec := call(h, http.MethodPost, "/api/orders",
 		fmt.Sprintf(`{"customer":"Toko Maju","items":[{"sku":"%s","qty":3},{"sku":"%s","qty":1}]}`, a.SKU, b.SKU))
 	expect(t, rec, http.StatusCreated)
@@ -48,12 +47,10 @@ func TestOrdersHTTP(t *testing.T) {
 		t.Fatal("stock not decremented")
 	}
 
-	// A client-supplied price is rejected, never used.
 	expectError(t, call(h, http.MethodPost, "/api/orders",
 		fmt.Sprintf(`{"customer":"X","items":[{"sku":"%s","qty":1,"unit_price":1}]}`, a.SKU)),
 		http.StatusBadRequest, "INVALID_JSON")
 
-	// (c) over HTTP: 409 names the short SKU; nothing changes.
 	e := expectError(t, call(h, http.MethodPost, "/api/orders",
 		fmt.Sprintf(`{"customer":"X","items":[{"sku":"%s","qty":2},{"sku":"%s","qty":5}]}`, a.SKU, b.SKU)),
 		http.StatusConflict, "INSUFFICIENT_STOCK")
@@ -64,7 +61,6 @@ func TestOrdersHTTP(t *testing.T) {
 		t.Fatal("stock changed after 409")
 	}
 
-	// 400s with field paths.
 	cases := map[string]string{
 		`{"customer":"X","items":[]}`: "items",
 		`{"customer":"X"}`:            "items",
@@ -81,7 +77,6 @@ func TestOrdersHTTP(t *testing.T) {
 		}
 	}
 
-	// Get, cancel twice, 404s.
 	path := fmt.Sprintf("/api/orders/%d", o.ID)
 	rec = call(h, http.MethodGet, path, "")
 	expect(t, rec, http.StatusOK)

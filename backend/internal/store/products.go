@@ -11,10 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// LowStockThreshold is the stock level at or below which a product is "low".
 const LowStockThreshold = 10
 
-// Product is a catalog row plus its derived last movement time.
 type Product struct {
 	ID             int64      `json:"id"`
 	SKU            string     `json:"sku"`
@@ -26,8 +24,6 @@ type Product struct {
 	LastMovementAt *time.Time `json:"last_movement_at"`
 }
 
-// ProductInput is the create request. Price is a json.Number so a
-// non-integer becomes a field error instead of a decode error.
 type ProductInput struct {
 	SKU      string      `json:"sku"`
 	Name     string      `json:"name"`
@@ -35,7 +31,6 @@ type ProductInput struct {
 	IsActive *bool       `json:"is_active"`
 }
 
-// ProductUpdate is the update request. SKU is accepted only to reject changes.
 type ProductUpdate struct {
 	SKU      *string     `json:"sku"`
 	Name     string      `json:"name"`
@@ -43,16 +38,12 @@ type ProductUpdate struct {
 	IsActive *bool       `json:"is_active"`
 }
 
-// ListFilter holds parsed list parameters. Status is "", "active",
-// "inactive" or "low".
 type ListFilter struct {
 	Search      string
 	Status      string
 	Page, Limit int
 }
 
-// productCols selects a product aliased as p, with last_movement_at derived
-// from stock_movements (backed by idx_stock_movements_product_created).
 const productCols = `p.id, p.sku, p.name, p.price, p.stock, p.is_active, p.created_at,
 	(SELECT max(m.created_at) FROM stock_movements m WHERE m.product_id = p.id)`
 
@@ -81,7 +72,6 @@ func notFound(err error) error {
 	return err
 }
 
-// likeEscape escapes LIKE wildcards so user search text matches literally.
 var likeEscape = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace
 
 const listWhere = `
@@ -91,8 +81,6 @@ WHERE ($1::text = '' OR p.sku ILIKE $2 OR p.name ILIKE $2)
        OR ($3 = 'inactive' AND NOT p.is_active)
        OR ($3 = 'low' AND p.stock <= 10))`
 
-// ListProducts returns one page of matching products in ascending id order
-// and the total number of matches.
 func (s *Store) ListProducts(ctx context.Context, f ListFilter) ([]Product, int64, error) {
 	pattern := "%" + likeEscape(f.Search) + "%"
 
@@ -121,15 +109,11 @@ func (s *Store) ListProducts(ctx context.Context, f ListFilter) ([]Product, int6
 	return out, total, rows.Err()
 }
 
-// GetProduct returns one product or ErrNotFound.
 func (s *Store) GetProduct(ctx context.Context, id int64) (Product, error) {
 	p, err := scanProduct(s.pool.QueryRow(ctx, `SELECT `+productCols+` FROM products p WHERE p.id = $1`, id))
 	return p, notFound(err)
 }
 
-// CreateProduct inserts a product with stock 0 (active unless is_active is
-// false). Duplicate SKUs are caught by the unique constraint, so concurrent
-// creates with one SKU yield exactly one row.
 func (s *Store) CreateProduct(ctx context.Context, in ProductInput) (Product, error) {
 	if errs := ValidateProductInput(in); len(errs) > 0 {
 		return Product{}, &ValidationError{Details: errs}
@@ -146,7 +130,6 @@ func (s *Store) CreateProduct(ctx context.Context, in ProductInput) (Product, er
 	return p, err
 }
 
-// UpdateProduct changes name, price and is_active. Stock and SKU never change here.
 func (s *Store) UpdateProduct(ctx context.Context, id int64, in ProductUpdate) (Product, error) {
 	var out Product
 	err := s.withTx(ctx, func(tx pgx.Tx) error {
@@ -167,8 +150,6 @@ func (s *Store) UpdateProduct(ctx context.Context, id int64, in ProductUpdate) (
 	return out, err
 }
 
-// DeleteProduct removes a product that has no stock movements and no order
-// items. History is never deleted: such products return ErrHasHistory.
 func (s *Store) DeleteProduct(ctx context.Context, id int64) error {
 	return s.withTx(ctx, func(tx pgx.Tx) error {
 		var sku string

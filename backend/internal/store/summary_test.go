@@ -7,13 +7,10 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// TestSummaryMatchesRecount compares Summary with a Go recount over the same
-// REPEATABLE READ snapshot, so tests running in parallel cannot skew it.
 func TestSummaryMatchesRecount(t *testing.T) {
 	s, pfx := testStore(t)
 	ctx := context.Background()
 
-	// A product whose price*stock overflows int32, to prove bigint summing.
 	big := stocked(t, s, pfx+"BIG", 2147483647, 1000000)
 	if big.Stock != 1000000 {
 		t.Fatalf("stock %d", big.Stock)

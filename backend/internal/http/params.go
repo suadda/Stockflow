@@ -13,8 +13,6 @@ const (
 	maxLimit     = 100
 )
 
-// parseListParams reads search, status, page and limit. Empty values use the
-// defaults (page 1, limit 20); limit is clamped to 100.
 func parseListParams(q url.Values) (store.ListFilter, []store.FieldError) {
 	f := store.ListFilter{
 		Search: strings.TrimSpace(q.Get("search")),
@@ -49,8 +47,6 @@ func parseListParams(q url.Values) (store.ListFilter, []store.FieldError) {
 	return f, errs
 }
 
-// parsePositive accepts 1..999999999 written as plain digits without a
-// leading zero.
 func parsePositive(s string) (int, bool) {
 	if len(s) == 0 || len(s) > 9 || s[0] == '0' {
 		return 0, false

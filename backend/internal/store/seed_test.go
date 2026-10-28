@@ -2,11 +2,6 @@ package store
 
 import "testing"
 
-// TestSeedIntegrity checks the invariants the seed establishes. The counts
-// assume a freshly seeded database (`docker compose down -v && docker compose
-// up -d`); the ledger and totals must hold on any database state. Unit price
-// = product price at seed time is enforced by the DO block in 002_seed.sql,
-// since prices may legitimately change after an order.
 func TestSeedIntegrity(t *testing.T) {
 	s, _ := testStore(t)
 
@@ -24,7 +19,6 @@ func TestSeedIntegrity(t *testing.T) {
 		t.Fatalf("%d orders, want >= 2"+freshHint, n)
 	}
 
-	// Ledger: stock = Σin − Σout for every product (one snapshot, one query).
 	if n := countWhere(t, s, `
 		SELECT count(*) FROM (
 			SELECT p.id FROM products p
@@ -35,7 +29,6 @@ func TestSeedIntegrity(t *testing.T) {
 		t.Fatalf("%d products where stock differs from the movement ledger", n)
 	}
 
-	// Every order total equals Σ qty × unit_price of its items.
 	if n := countWhere(t, s, `
 		SELECT count(*) FROM (
 			SELECT o.id FROM sales_orders o
