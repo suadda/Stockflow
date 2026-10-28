@@ -80,12 +80,16 @@ func (s *Store) CreateOrder(ctx context.Context, in OrderInput) (Order, error) {
 			qty, _ := parseQty(it.Qty)
 			lines[i] = line{idx: i, sku: skus[i], qty: qty}
 		}
+		// Ascending SKU order: every transaction takes product row locks in the
+		// same order, so concurrent multi-item orders cannot deadlock.
 		sortLines(lines)
 
 		ids := make([]int64, len(lines))
 		prices := make([]int64, len(lines))
 		var total int64
 		for k, l := range lines {
+			// Guarded decrement: the stock check and the decrement are one
+			// statement, so concurrent orders can never oversell.
 			err := tx.QueryRow(ctx,
 				`UPDATE products SET stock = stock - $2 WHERE sku = $1 AND stock >= $2 RETURNING id, price`,
 				l.sku, l.qty).Scan(&ids[k], &prices[k])
@@ -168,6 +172,8 @@ func (s *Store) GetOrder(ctx context.Context, id int64) (Order, error) {
 func (s *Store) CancelOrder(ctx context.Context, id int64) (Order, error) {
 	var out Order
 	err := s.withTx(ctx, func(tx pgx.Tx) error {
+		// Row lock: a concurrent cancel waits here, then sees CANCELLED, so
+		// stock is restored exactly once.
 		var status string
 		if err := tx.QueryRow(ctx, `SELECT status FROM sales_orders WHERE id = $1 FOR UPDATE`, id).Scan(&status); err != nil {
 			return notFound(err)
