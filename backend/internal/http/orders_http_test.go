@@ -103,3 +103,18 @@ func TestOrdersHTTP(t *testing.T) {
 	expectError(t, call(h, http.MethodGet, "/api/orders/2147483000", ""), http.StatusNotFound, "NOT_FOUND")
 	expectError(t, call(h, http.MethodPost, "/api/orders/2147483000/cancel", ""), http.StatusNotFound, "NOT_FOUND")
 }
+
+func TestSummaryHTTP(t *testing.T) {
+	h, _, _ := testAPI(t)
+	rec := call(h, http.MethodGet, "/api/summary", "")
+	expect(t, rec, http.StatusOK)
+	got := decodeAs[map[string]float64](t, rec)
+	for _, k := range []string{"total_products", "active_products", "total_stock_value", "low_stock_count"} {
+		if _, ok := got[k]; !ok {
+			t.Fatalf("missing %s in %s", k, rec.Body.String())
+		}
+	}
+	if got["active_products"] > got["total_products"] || got["low_stock_count"] > got["total_products"] {
+		t.Fatalf("inconsistent summary: %v", got)
+	}
+}
