@@ -33,6 +33,7 @@ func NewRouter(s *store.Store) http.Handler {
 	mux.HandleFunc("POST /api/orders", createOrder(s))
 	mux.HandleFunc("GET /api/orders/{id}", getOrder(s))
 	mux.HandleFunc("POST /api/orders/{id}/cancel", cancelOrder(s))
+	mux.HandleFunc("GET /api/summary", getSummary(s))
 
 	mux.HandleFunc("/", fallback(mux))
 
