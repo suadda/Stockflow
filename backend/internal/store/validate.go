@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // maxInt32 is the upper bound of the INTEGER money and quantity columns.
@@ -63,6 +64,43 @@ func ValidateProductUpdate(in ProductUpdate, storedSKU string) []FieldError {
 	}
 	if in.IsActive == nil {
 		errs = addErr(errs, "is_active", "is_active is required")
+	}
+	return errs
+}
+
+// maxQty bounds a single stock adjustment or order line.
+const maxQty = 1_000_000
+
+// maxNote bounds a stock movement note, in characters.
+const maxNote = 500
+
+// parseQty converts a JSON number to a quantity in 1..maxQty.
+func parseQty(n json.Number) (int64, string) {
+	if n == "" {
+		return 0, "qty is required"
+	}
+	v, err := strconv.ParseInt(string(n), 10, 64)
+	if errors.Is(err, strconv.ErrRange) || (err == nil && (v < 1 || v > maxQty)) {
+		return 0, "qty must be between 1 and 1000000"
+	}
+	if err != nil {
+		return 0, "qty must be an integer"
+	}
+	return v, ""
+}
+
+// ValidateStockInput checks type is in/out, qty is an integer in
+// 1..1,000,000 and note is at most 500 characters.
+func ValidateStockInput(in StockInput) []FieldError {
+	var errs []FieldError
+	if in.Type != MovementIn && in.Type != MovementOut {
+		errs = addErr(errs, "type", `type must be "in" or "out"`)
+	}
+	if _, msg := parseQty(in.Qty); msg != "" {
+		errs = addErr(errs, "qty", msg)
+	}
+	if utf8.RuneCountInString(in.Note) > maxNote {
+		errs = addErr(errs, "note", "note must be at most 500 characters")
 	}
 	return errs
 }

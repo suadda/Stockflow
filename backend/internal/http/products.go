@@ -75,3 +75,40 @@ func deleteProduct(s *store.Store) http.HandlerFunc {
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
+
+func adjustStock(s *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, ok := parseID(r)
+		if !ok {
+			writeStoreError(w, store.ErrNotFound)
+			return
+		}
+		var in store.StockInput
+		if err := decodeJSON(r, &in); err != nil {
+			writeStoreError(w, err)
+			return
+		}
+		p, err := s.AdjustStock(r.Context(), id, in)
+		if err != nil {
+			writeStoreError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, p)
+	}
+}
+
+func listMovements(s *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, ok := parseID(r)
+		if !ok {
+			writeStoreError(w, store.ErrNotFound)
+			return
+		}
+		ms, err := s.ListMovements(r.Context(), id)
+		if err != nil {
+			writeStoreError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"data": ms})
+	}
+}

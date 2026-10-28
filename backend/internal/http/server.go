@@ -28,6 +28,8 @@ func NewRouter(s *store.Store) http.Handler {
 	mux.HandleFunc("POST /api/products", createProduct(s))
 	mux.HandleFunc("PUT /api/products/{id}", updateProduct(s))
 	mux.HandleFunc("DELETE /api/products/{id}", deleteProduct(s))
+	mux.HandleFunc("POST /api/products/{id}/stock", adjustStock(s))
+	mux.HandleFunc("GET /api/products/{id}/movements", listMovements(s))
 
 	mux.HandleFunc("/", fallback(mux))
 
