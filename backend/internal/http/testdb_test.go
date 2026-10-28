@@ -39,9 +39,7 @@ func testAPI(t *testing.T) (http.Handler, *pgxpool.Pool, string) {
 	}
 	prefix := "T" + strconv.FormatInt(time.Now().UnixNano(), 36) + "-"
 	t.Cleanup(func() {
-		like := prefix + "%"
-		_, _ = pool.Exec(ctx, `DELETE FROM stock_movements WHERE product_id IN (SELECT id FROM products WHERE sku LIKE $1)`, like)
-		_, _ = pool.Exec(ctx, `DELETE FROM products WHERE sku LIKE $1`, like)
+		cleanupPrefix(t, pool, prefix)
 		pool.Close()
 	})
 	return NewRouter(store.New(pool)), pool, prefix
@@ -99,4 +97,22 @@ func detailFields(e map[string]any) map[string]bool {
 		}
 	}
 	return out
+}
+
+// cleanupPrefix deletes orders touching prefixed SKUs, then their products'
+// movements, then the products.
+func cleanupPrefix(t *testing.T, pool *pgxpool.Pool, prefix string) {
+	ctx := context.Background()
+	like := prefix + "%"
+	for _, q := range []string{
+		`WITH d AS (DELETE FROM sales_order_items WHERE order_id IN
+		   (SELECT order_id FROM sales_order_items WHERE sku LIKE $1) RETURNING order_id)
+		 DELETE FROM sales_orders WHERE id IN (SELECT order_id FROM d)`,
+		`DELETE FROM stock_movements WHERE product_id IN (SELECT id FROM products WHERE sku LIKE $1)`,
+		`DELETE FROM products WHERE sku LIKE $1`,
+	} {
+		if _, err := pool.Exec(ctx, q, like); err != nil {
+			t.Errorf("cleanup: %v", err)
+		}
+	}
 }

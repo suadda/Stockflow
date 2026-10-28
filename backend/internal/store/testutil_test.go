@@ -78,3 +78,54 @@ func stockIn(qty int) StockInput {
 func stockOut(qty int) StockInput {
 	return StockInput{Type: MovementOut, Qty: json.Number(strconv.Itoa(qty)), Note: "test out"}
 }
+
+// stocked creates a product and receives qty units into it.
+func stocked(t *testing.T, s *Store, sku string, price int64, qty int) Product {
+	t.Helper()
+	p := newProduct(t, s, sku, price)
+	if qty > 0 {
+		var err error
+		if p, err = s.AdjustStock(context.Background(), p.ID, stockIn(qty)); err != nil {
+			t.Fatalf("stock %s: %v", sku, err)
+		}
+	}
+	return p
+}
+
+func order(customer string, items ...OrderItemInput) OrderInput {
+	return OrderInput{Customer: customer, Items: items}
+}
+
+func item(sku string, qty int) OrderItemInput {
+	return OrderItemInput{SKU: sku, Qty: json.Number(strconv.Itoa(qty))}
+}
+
+func stockOf(t *testing.T, s *Store, id int64) int64 {
+	t.Helper()
+	p, err := s.GetProduct(context.Background(), id)
+	if err != nil {
+		t.Fatalf("get %d: %v", id, err)
+	}
+	return p.Stock
+}
+
+// countWhere runs a count(*) query with the given args.
+func countWhere(t *testing.T, s *Store, sql string, args ...any) int {
+	t.Helper()
+	var n int
+	if err := s.pool.QueryRow(context.Background(), sql, args...).Scan(&n); err != nil {
+		t.Fatalf("count: %v", err)
+	}
+	return n
+}
+
+// movementsOf counts a product's movements of one type.
+func movementsOf(t *testing.T, s *Store, id int64, typ string) int {
+	return countWhere(t, s, `SELECT count(*) FROM stock_movements WHERE product_id = $1 AND type = $2`, id, typ)
+}
+
+// ordersFor counts orders that include any SKU with the prefix.
+func ordersFor(t *testing.T, s *Store, prefix string) int {
+	return countWhere(t, s,
+		`SELECT count(DISTINCT order_id) FROM sales_order_items WHERE sku LIKE $1`, prefix+"%")
+}
