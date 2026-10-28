@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { api, ApiError, isAbort, toApiError } from '../api/client'
 import type { Paged, Product, ProductStatusFilter } from '../api/types'
+import { AdjustStockModal } from '../components/AdjustStockModal'
 import { ErrorState } from '../components/ErrorState'
 import { ProductFormModal } from '../components/ProductFormModal'
 import { StatusBadge } from '../components/StatusBadge'
+import { SummaryCards } from '../components/SummaryCards'
 import { formatDateTime, formatRelative, formatRupiah } from '../lib/format'
 import { useDebounce } from '../lib/useDebounce'
 import { useRefresh } from '../lib/refresh'
@@ -40,6 +42,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
 
   const [editing, setEditing] = useState<Editing>(null)
+  const [adjusting, setAdjusting] = useState<Product | null>(null)
   const [banner, setBanner] = useState<Banner>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
@@ -170,6 +173,14 @@ export default function ProductsPage() {
                     <button
                       type="button"
                       className="btn btn-sm"
+                      onClick={() => setAdjusting(p)}
+                      aria-label={`Adjust stock for ${p.sku}`}
+                    >
+                      Adjust
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm"
                       onClick={() => setEditing({ mode: 'edit', product: p })}
                       aria-label={`Edit ${p.sku}`}
                     >
@@ -221,6 +232,8 @@ export default function ProductsPage() {
         </button>
       </div>
 
+      <SummaryCards />
+
       <div className="toolbar">
         <div className="field-inline">
           <label htmlFor="product-search">Search SKU or name</label>
@@ -260,6 +273,18 @@ export default function ProductsPage() {
       </p>
 
       {body}
+
+      {adjusting && (
+        <AdjustStockModal
+          product={adjusting}
+          onClose={() => setAdjusting(null)}
+          onDone={(p) => {
+            setAdjusting(null)
+            setBanner({ kind: 'ok', text: `Stock for ${p.sku} is now ${p.stock}.` })
+            bump()
+          }}
+        />
+      )}
 
       {editing && (
         <ProductFormModal

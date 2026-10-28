@@ -42,7 +42,7 @@ export default function App() {
       <main>
         {route.name === 'products' && <ProductsPage />}
         {route.name === 'orderNew' && <OrderFormPage />}
-        {route.name === 'order' && <OrderDetailPage id={route.id} />}
+        {route.name === 'order' && <OrderDetailPage key={route.id} id={route.id} />}
       </main>
     </>
   )

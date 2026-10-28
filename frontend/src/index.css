@@ -475,3 +475,152 @@ td.actions .btn + .btn {
   gap: 8px;
   margin-top: 16px;
 }
+
+/* Summary cards */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 0 0 20px;
+}
+
+.card {
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.card dt {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.card dd {
+  margin: 4px 0 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Adjust modal */
+.radio-group {
+  border: 0;
+  padding: 0;
+  margin: 0 0 14px;
+}
+
+.radio-group legend {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font-weight: 400 !important;
+}
+
+/* Order form */
+.order-form {
+  max-width: 760px;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  margin: 20px 0 8px;
+}
+
+.order-rows {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+}
+
+.order-row {
+  display: grid;
+  grid-template-columns: 1fr 120px auto;
+  align-items: start;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.order-row .field {
+  margin: 0;
+}
+
+.order-row.conflict {
+  border: 2px solid var(--danger);
+  background: var(--danger-bg);
+}
+
+.order-row .remove-row {
+  margin-top: 28px;
+}
+
+.order-row .hint {
+  min-height: 1.3em;
+}
+
+.form-errors {
+  display: block;
+  margin-top: 12px;
+  padding-left: 32px;
+}
+
+.order-submit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* Order detail */
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 40px;
+  margin: 0 0 16px;
+}
+
+.meta dt {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.meta dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+
+tfoot th,
+tfoot td {
+  border-top: 2px solid var(--border);
+  border-bottom: 0;
+  color: var(--text);
+  background: transparent;
+  font-size: 1rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+td.total {
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .order-row {
+    grid-template-columns: 1fr 90px;
+  }
+  .order-row .remove-row {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+}
