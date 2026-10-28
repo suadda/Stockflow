@@ -210,6 +210,7 @@ func TestParseID(t *testing.T) {
 	cases := map[string]bool{
 		"1": true, "42": true,
 		"0": false, "-1": false, "+1": false, "1a": false, "": false, " 1": false,
+		"2147483647": true, "2147483648": false,
 		"99999999999999999999": false,
 	}
 	for in, ok := range cases {
