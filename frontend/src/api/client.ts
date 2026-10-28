@@ -71,6 +71,12 @@ export function parseApiError(status: number, bodyText: string): ApiError {
   return new ApiError(status, e.code, message, extras)
 }
 
+/** Normalises anything thrown by an api call into an ApiError. */
+export function toApiError(err: unknown): ApiError {
+  if (err instanceof ApiError) return err
+  return new ApiError(0, 'UNKNOWN', err instanceof Error ? err.message : String(err))
+}
+
 /** True for the error fetch throws when a request is aborted. */
 export function isAbort(err: unknown): boolean {
   return err instanceof DOMException && err.name === 'AbortError'
